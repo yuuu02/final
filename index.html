@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雲林主題樂園 票務系統</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --candy-pink: #FF9ECD;
+            --candy-blue: #9ED2FF;
+            --candy-purple: #E5B8FF;
+            --candy-yellow: #FFE5B8;
+        }
+        
+        body {
+            background-color: #FFF5F8;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+        }
+        
+        .theme-bg {
+            background: linear-gradient(135deg, var(--candy-blue) 0%, var(--candy-purple) 70%);
+            color: white;
+            border-radius: 0 0 25px 25px;
+        }
+        
+        .balance-card {
+            background: linear-gradient(135deg, var(--candy-blue) 0%, var(--candy-purple) 100%);
+            color: white;
+            border-radius: 25px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid white;
+        }
+        
+        .transaction-card {
+            border-left: 4px solid var(--candy-pink);
+            margin-bottom: 15px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .transaction-card:hover {
+            transform: translateX(5px) translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .btn-candy {
+            background: var(--candy-pink);
+            color: white;
+            border-radius: 25px;
+            padding: 8px 20px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-candy:hover {
+            background: var(--candy-purple);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .card {
+            border-radius: 25px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            border-radius: 25px 25px 0 0 !important;
+            background: var(--candy-yellow) !important;
+            color: #333;
+        }
+        
+        .progress {
+            height: 15px;
+            border-radius: 10px;
+            background-color: rgba(255,255,255,0.3);
+        }
+        
+        .progress-bar {
+            background-color: var(--candy-yellow);
+        }
+        
+        .modal-content {
+            border-radius: 25px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: var(--candy-pink);
+            color: white;
+            border-radius: 25px 25px 0 0;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        /* 新增掃描選項的樣式 */
+        .scan-option {
+            border: 2px solid var(--candy-pink);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .scan-option:hover {
+            background-color: var(--candy-yellow);
+            transform: translateY(-2px);
+        }
+        
+        .scan-option.active {
+            background-color: var(--candy-pink);
+            color: white;
+        }
+        
+        .scan-input-area {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 導航欄 -->
+<nav class="navbar navbar-expand-lg navbar-dark theme-bg">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-candy-cane me-2"></i>
+            <span data-lang="title">雲林主題樂園</span>
+        </a>
+        <div class="d-flex">
+            <button class="btn btn-candy me-2" onclick="toggleLanguage()">
+                <i class="fas fa-language"></i> <span data-lang="switchLang">切換語言</span>
+            </button>
+            <button class="btn btn-candy" data-bs-toggle="modal" data-bs-target="#scanModal">
+                <i class="fas fa-barcode"></i> <span data-lang="scanCode">掃描條碼</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- 主要內容 -->
+<div class="container mt-4">
+    <!-- 餘額卡片 -->
+    <div class="balance-card">
+        <div class="row">
+            <div class="col-md-6">
+                <h3><i class="fas fa-wallet me-2"></i><span data-lang="balance">當前餘額</span></h3>
+                <h2 id="currentBalance">NT$ 1,000</h2>
+                <div class="progress mt-2">
+                    <div class="progress-bar" role="progressbar" style="width: 70%"></div>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-candy" onclick="showTopUp()">
+                    <i class="fas fa-plus-circle"></i> <span data-lang="topUp">儲值</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易記錄 -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-history me-2"></i><span data-lang="transactions">交易記錄</span></h5>
+        </div>
+        <div class="card-body">
+            <div id="transactionList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 掃描條碼模態框 -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span data-lang="scanTitle">票券掃描</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <!-- 掃描方式選擇 -->
+                <div class="mb-4">
+                    <div class="scan-option" onclick="switchScanMode('rfid')" id="rfidOption">
+                        <i class="fas fa-wifi fa-2x mb-2"></i>
+                        <h6 data-lang="rfidScan">RFID 感應</h6>
+                    </div>
+                    <div class="scan-option" onclick="switchScanMode('barcode')" id="barcodeOption">
+                        <i class="fas fa-barcode fa-2x mb-2"></i>
+                        <h6 data-lang="barcodeScan">條碼掃描</h6>
+                    </div>
+                </div>
+
+                <!-- RFID 感應區域 -->
+                <div id="rfidArea" class="scan-input-area" style="display: none;">
+                    <p><span data-lang="rfidInstruction">請將RFID票券靠近感應區</span></p>
+                    <div class="mb-3">
+                        <input type="text" 
+                               id="rfidInput" 
+                               class="form-control text-center" 
+                               placeholder="RFID編號"
+                               maxlength="8"
+                               pattern="[A-Fa-f0-9]{8}"
+                               required
+                               autofocus>
+                    </div>
+                    <button class="btn btn-candy" onclick="processRFID()">
+                        <i class="fas fa-wifi me-2"></i>
+                        <span data-lang="startScan">開始感應</span>
+                    </button>
+                </div>
+
+                <!-- 條碼掃描區域 -->
+                <div id="barcodeArea" class="scan-input-area" style="display: none;">
+                    <p><span data-lang="barcodeInstruction">請使用掃描器掃描票券條碼</span></p>
+                    <div class="mb-3">
+                        <input type="text" 
+                               id="barcodeInput" 
+                               class="form-control text-center" 
+                               placeholder="條碼號碼"
+                               maxlength="13"
+                               pattern="[0-9]{13}"
+                               required
+                               autofocus>
+                    </div>
+                </div>
+
+                <div id="scanStatus" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 儲值模態框 -->
+<div class="modal fade" id="topUpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span data-lang="topUpTitle">儲值金額</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label"><span data-lang="selectAmount">選擇金額</span></label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-candy flex-grow-1" onclick="selectAmount(500)">NT$ 500</button>
+                        <button class="btn btn-candy flex-grow-1" onclick="selectAmount(1000)">NT$ 1,000</button>
+                        <button class="btn btn-candy flex-grow-1" onclick="selectAmount(2000)">NT$ 2,000</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><span data-lang="customAmount">自訂金額</span></label>
+                    <input type="number" class="form-control" id="customAmount" min="100" step="100">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span data-lang="cancel">取消</span>
+                </button>
+                <button type="button" class="btn btn-candy" onclick="processTopUp()">
+                    <span data-lang="confirm">確認</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+// 語言設定
+let currentLanguage = 'zh';
+const translations = {
+    zh: {
+        title: '雲林主題樂園',
+        switchLang: '切換語言',
+        balance: '當前餘額',
+        topUp: '儲值',
+        transactions: '交易記錄',
+        scanCode: '掃描條碼',
+        scanInstruction: '請掃描票券條碼或輸入條碼號碼',
+        topUpTitle: '儲值金額',
+        selectAmount: '選擇金額',
+        customAmount: '自訂金額',
+        cancel: '取消',
+        confirm: '確認',
+        scanSuccess: '掃描成功！',
+        scanFailed: '掃描失敗，請重試',
+        entry: '入場',
+        topUpText: '儲值',
+        startScan: '開始掃描',
+        scanInProgress: '掃描中...',
+        processing: '處理中...',
+        success: '成功',
+        failed: '失敗',
+        pleaseWait: '請稍候...',
+        invalidBarcode: '請輸入有效的條碼號碼 (13位數字)',
+        invalidTicket: '無效的票券，請確認後重試',
+        scanTitle: '票券掃描',
+        rfidScan: 'RFID 感應',
+        barcodeScan: '條碼掃描',
+        rfidInstruction: '請將RFID票券靠近感應區',
+        barcodeInstruction: '請使用掃描器掃描票券條碼',
+        scanning: '掃描中...',
+        validating: '驗證中...'
+    },
+    en: {
+        title: 'Yunlin Theme Park',
+        switchLang: 'Switch Language',
+        balance: 'Current Balance',
+        topUp: 'Top Up',
+        transactions: 'Transactions',
+        scanCode: 'Scan Barcode',
+        scanInstruction: 'Please scan ticket barcode or enter barcode number',
+        topUpTitle: 'Top Up Amount',
+        selectAmount: 'Select Amount',
+        customAmount: 'Custom Amount',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        scanSuccess: 'Scan successful!',
+        scanFailed: 'Scan failed, please try again',
+        entry: 'Entry',
+        topUpText: 'Top Up',
+        startScan: 'Start Scan',
+        scanInProgress: 'Scanning...',
+        processing: 'Processing...',
+        success: 'Success',
+        failed: 'Failed',
+        pleaseWait: 'Please wait...',
+        invalidBarcode: 'Please enter a valid barcode number (13 digits)',
+        invalidTicket: 'Invalid ticket, please try again',
+        scanTitle: 'Ticket Scanning',
+        rfidScan: 'RFID Scan',
+        barcodeScan: 'Barcode Scan',
+        rfidInstruction: 'Please place your RFID ticket near the sensor',
+        barcodeInstruction: 'Please scan the ticket barcode',
+        scanning: 'Scanning...',
+        validating: 'Validating...'
+    }
+};
+
+// 更新語言
+function updateLanguage() {
+    document.querySelectorAll('[data-lang]').forEach(element => {
+        const key = element.getAttribute('data-lang');
+        if (translations[currentLanguage][key]) {
+            element.textContent = translations[currentLanguage][key];
+        }
+    });
+    updateTransactionList();
+}
+
+// 切換語言
+function toggleLanguage() {
+    currentLanguage = currentLanguage === 'zh' ? 'en' : 'zh';
+    updateLanguage();
+}
+
+// 餘額管理
+let currentBalanceAmount = 1000;
+
+function updateBalance(amount) {
+    currentBalanceAmount = amount;
+    document.getElementById('currentBalance').textContent = 
+        `NT$ ${currentBalanceAmount.toLocaleString()}`;
+    updateProgressBar();
+}
+
+function updateProgressBar() {
+    const maxBalance = 5000;
+    const percentage = (currentBalanceAmount / maxBalance) * 100;
+    document.querySelector('.progress-bar').style.width = `${percentage}%`;
+}
+
+// 交易記錄管理
+const transactions = [];
+
+function addTransaction(type, amount, time = new Date()) {
+    transactions.unshift({
+        type,
+        amount,
+        time
+    });
+    updateTransactionList();
+}
+
+function updateTransactionList() {
+    const list = document.getElementById('transactionList');
+    list.innerHTML = transactions.map(transaction => `
+        <div class="transaction-card p-3 bg-light">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h6>${translations[currentLanguage][transaction.type] || transaction.type}</h6>
+                    <small class="text-muted">${transaction.time.toLocaleString()}</small>
+                </div>
+                <div class="${transaction.amount >= 0 ? 'amount-positive' : 'amount-negative'}">
+                    ${transaction.amount >= 0 ? '+' : ''} NT$ ${Math.abs(transaction.amount).toLocaleString()}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 掃描模式切換
+let currentScanMode = 'rfid';
+
+function switchScanMode(mode) {
+    currentScanMode = mode;
+    
+    // 更新視覺效果
+    document.getElementById('rfidOption').classList.toggle('active', mode === 'rfid');
+    document.getElementById('barcodeOption').classList.toggle('active', mode === 'barcode');
+    
+    // 顯示/隱藏對應的輸入區域
+    document.getElementById('rfidArea').style.display = mode === 'rfid' ? 'block' : 'none';
+    document.getElementById('barcodeArea').style.display = mode === 'barcode' ? 'block' : 'none';
+    
+    // 清空狀態和輸入
+    document.getElementById('scanStatus').innerHTML = '';
+    document.getElementById('rfidInput').value = '';
+    document.getElementById('barcodeInput').value = '';
+    
+    // 設置對應輸入框的焦點
+    if (mode === 'rfid') {
+        document.getElementById('rfidInput').focus();
+    } else {
+        document.getElementById('barcodeInput').focus();
+    }
+}
+
+// 處理RFID掃描
+function processRFID() {
+    const rfidInput = document.getElementById('rfidInput');
+    const scanStatus = document.getElementById('scanStatus');
+    
+    if (!/^[A-Fa-f0-9]{8}$/.test(rfidInput.value)) {
+        scanStatus.innerHTML = `<div class="alert alert-danger">${translations[currentLanguage].invalidRFID}</div>`;
+        return;
+    }
+    
+    showProcessing(scanStatus);
+    
+    setTimeout(() => {
+        const validRFIDs = ['AB12CD34', 'FFAA5599', '12345678'];
+        const isValid = validRFIDs.includes(rfidInput.value.toUpperCase());
+        
+        handleScanResult(isValid, scanStatus);
+    }, 1500);
+}
+
+// 處理條碼掃描
+function processBarcode() {
+    const barcodeInput = document.getElementById('barcodeInput');
+    const scanStatus = document.getElementById('scanStatus');
+    
+    if (!/^\d{13}$/.test(barcodeInput.value)) {
+        scanStatus.innerHTML = `<div class="alert alert-danger">${translations[currentLanguage].invalidBarcode}</div>`;
+        return;
+    }
+    
+    showProcessing(scanStatus);
+    
+    setTimeout(() => {
+        const validBarcodes = ['1234567890123', '2345678901234', '3456789012345'];
+        const isValid = validBarcodes.includes(barcodeInput.value);
+        
+        handleScanResult(isValid, scanStatus);
+    }, 1000);
+}
+// 顯示處理中狀態
+function showProcessing(statusElement) {
+    statusElement.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center">
+            <div class="spinner-border text-primary me-2"></div>
+            <span>${translations[currentLanguage].scanning}</span>
+        </div>
+    `;
+}
+
+// 處理掃描結果
+function handleScanResult(isValid, statusElement) {
+    if (isValid) {
+        statusElement.innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                ${translations[currentLanguage].scanSuccess}
+            </div>`;
+        
+        updateBalance(currentBalanceAmount - 100);
+        addTransaction('entry', -100);
+        
+        setTimeout(() => {
+            bootstrap.Modal.getInstance(document.getElementById('scanModal')).hide();
+        }, 2000);
+    } else {
+        statusElement.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${translations[currentLanguage].invalidTicket}
+            </div>`;
+    }
+}
+
+// 當掃描模態框關閉時重置所有狀態
+document.getElementById('scanModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('scanStatus').innerHTML = '';
+    document.getElementById('barcodeInput').value = '';
+});
+
+// 為條碼輸入欄位添加即時驗證
+document.getElementById('barcodeInput').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 13);
+});
+
+// 儲值功能
+function showTopUp() {
+    document.getElementById('customAmount').value = '';
+    new bootstrap.Modal(document.getElementById('topUpModal')).show();
+}
+
+function selectAmount(amount) {
+    document.getElementById('customAmount').value = amount;
+}
+
+function processTopUp() {
+    const amount = parseInt(document.getElementById('customAmount').value);
+    if (amount && amount >= 100) {
+        updateBalance(currentBalanceAmount + amount);
+        addTransaction('topUpText', amount);
+        
+        // 添加成功提示動畫
+        const modalBody = document.querySelector('#topUpModal .modal-body');
+        const successMessage = document.createElement('div');
+        successMessage.className = 'alert alert-success mt-3';
+        successMessage.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            ${translations[currentLanguage].success}
+        `;
+        modalBody.appendChild(successMessage);
+        
+        // 2秒後關閉模態框
+        setTimeout(() => {
+            bootstrap.Modal.getInstance(document.getElementById('topUpModal')).hide();
+            // 移除成功提示
+            successMessage.remove();
+        }, 2000);
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    updateLanguage();
+    updateBalance(currentBalanceAmount);
+    // 添加示例交易記錄
+    addTransaction('entry', -100, new Date(Date.now() - 3600000));
+    addTransaction('topUpText', 1000, new Date(Date.now() - 7200000));
+    
+    // 添加條碼輸入框的回車鍵監聽
+    document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            processBarcode();
+        }
+    });
+    // 添加條碼輸入自動處理
+    document.getElementById('barcodeInput').addEventListener('input', function(e) {
+        if (this.value.length === 13) {
+            processBarcode();
+        }
+    });
+    
+    // 設置默認掃描模式
+    switchScanMode('rfid');
+    // 模態框重置
+    document.getElementById('scanModal').addEventListener('shown.bs.modal', function () {
+        switchScanMode('rfid');
+});
+});
+</script>
+</body>
+</html>
