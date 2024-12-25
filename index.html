@@ -365,7 +365,7 @@ function toggleLanguage() {
 }
 
 // 餘額管理
-let currentBalanceAmount = 1000;
+let currentBalanceAmount = 0; // 修改初始餘額為 0
 
 function updateBalance(amount) {
     currentBalanceAmount = amount;
@@ -373,6 +373,7 @@ function updateBalance(amount) {
         `NT$ ${currentBalanceAmount.toLocaleString()}`;
     updateProgressBar();
 }
+
 
 function updateProgressBar() {
     const maxBalance = 5000;
@@ -558,11 +559,8 @@ function processTopUp() {
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
     updateLanguage();
-    updateBalance(currentBalanceAmount);
-    // 添加示例交易記錄
-    addTransaction('entry', -100, new Date(Date.now() - 3600000));
-    addTransaction('topUpText', 1000, new Date(Date.now() - 7200000));
-    
+    updateBalance(currentBalanceAmount); // 使用 0 作為初始餘額
+
     // 添加條碼輸入框的回車鍵監聽
     document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
